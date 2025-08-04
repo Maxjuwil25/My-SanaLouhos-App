@@ -5,17 +5,27 @@
 <head>
     <title>Sanalouhos</title>
     <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="style.css"/>
 </head>
 
 <body>
     <h1>Sanalouhos</h1>
 
+    <p id="instructions">
+        Sanan löydyttyä paina "Yhdistä" nappulaa.
+    </p>
+
+
     <div id="grid"></div>
 
     <button id="btn">Yhdistä</button>
+
+    <div aria-live="polite" class="hidden" id="status"></div>
     
     <script src="script.js"></script>
+    <script src="accessibility.js"></script>
+
 </body>
 
 </html>

@@ -1,38 +1,123 @@
-const gridEl = document.getElementById('grid');
 
-const gridData = [
+/* const gridData = [
     ['K','E','D','A','S'],
     ['I','S','O','T','I'],
     ['A','S','T','O','R'],
     ['M','I','S','J','H'],
     ['A','M','L','E','O'],
     ['A','I','L','M','A']
-];
+]; */
 
-let selectedTiles = [];
-let completedTiles = [];
 let dictionary = new Set();
 let WORDS_TO_FIND = 5;
+gridEl = document.getElementById('grid');
 
+let dictionaryArray = [];
+let commonArray = [];
+let currentWords = [];
+let gridData = [];
+let selectedTiles = [];
+let completedTiles = [];
 
+const svgNS = 'http://www.w3.org/2000/svg';
+const svg = document.createElementNS(svgNS, 'svg');
+svg.setAttribute('id', 'connections');
+svg.style.position = 'absolute';
+svg.style.top = '0'; svg.style.left = '0';
+svg.style.width = '100%'; svg.style.height = '100%';
+svg.style.pointerEvents = 'none';
+gridEl.style.position = 'relative';
+gridEl.appendChild(svg);
 
-fetch('words_fi.json')
-    .then(res => res.json())
-    .then(words => {
-        dictionary = new Set(words);
-     })
-    .catch(err => console.error('Dictionary load failed', err));
-
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   renderGrid();
   document.getElementById('btn').addEventListener('click', submitWord);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      submitWord();
+    }
+  });
+  await loadDictionary();
+  shuffleGrid();
 });
 
+async function loadDictionary() {
+  try {
+    const response = await fetch('dictionaries/words_fi.json');
+    if (!response.ok) {
+      throw new Error(`Dictionary fetch failed: ${response.status}`);
+    }
+    dictionaryArray = await response.json();
+    console.log('Loaded', dictionaryArray.length, 'words');
+  } catch (err) {
+    console.error('Failed to load dictionary', err);
+    dictionaryArray = [];
+  }
+  try {
+    const response = await fetch('dictionaries/words.json');
+    if (!response.ok) {
+      throw new Error(`Dictionary fetch failed: ${response.status}`);
+    }
+    commonArray = await response.json();
+    commonArray = commonArray.map(w => w.split(' ')[0]);
+    console.log('Loaded', commonArray.length, 'common-words');
+  } catch (err) {
+    console.error('Failed to load dictionary', err);
+    commonArray = [];
+  }
+}
+
+function pickWords() {
+  const target = 30, count = 5;
+  const filtered = commonArray.filter(w => w.length >= 3 && w.length <= 8 && !w.includes('-'));
+  const shuffled = shuffle(filtered);
+  let result = null;
+  function backtrack(start, chosen, sum) {
+    if (chosen.length === count) {
+      if (sum === target) { result = chosen.slice(); return true; }
+      return false;
+    }
+    for (let i = start; i < shuffled.length; i++) {
+      const w = shuffled[i];
+      if (sum + w.length > target) continue;
+      chosen.push(w);
+      if (backtrack(i + 1, chosen, sum + w.length)) return true;
+      chosen.pop();
+    }
+    return false;
+  }
+  backtrack(0, [], 0);
+  if (!result) throw new Error('No word combination found');
+  return result
+}
+
+function shuffleGrid () {
+  selectedTiles = [];
+  completedWords = [];
+
+  currentWords = pickWords().sort(() => Math.random() - 0.5);
+  console.log(currentWords);
+  
+
+  const path = findPath();
+
+  gridData = segmentPath(path, currentWords);
+
+  renderGrid();
+  drawConnections();
+}
+
 function renderGrid () {
+  if (!gridEl) return;
+  gridEl.innerHTML = '';
+  gridEl.appendChild(svg);
+
     for (let r=0; r < gridData.length; r++) {
         for (let c=0; c < gridData[r].length; c++) {
-            const tile = document.createElement('div');
+            const tile = document.createElement('button');
+            tile.type = 'button';
             tile.className = 'tile';
+            tile.setAttribute('role','gridcell');
             tile.dataset.row = r;
             tile.dataset.col = c;
             tile.textContent = gridData[r][c];
@@ -40,6 +125,46 @@ function renderGrid () {
         }
 
     }   
+}
+
+function segmentPath(path, words) {
+  const data = Array.from({ length: 6 }, () => Array(5).fill(''));
+  let idx = 0;
+  for (let w of words) {
+    for (let ch of w) {
+      const [r, c] = path[idx++];
+      data[r][c] = ch.toUpperCase();
+    }
+  }
+  return data;
+}
+
+const ROWS = 6, COLS = 5;
+function neighbors(r, c) {
+  return [[r-1,c],[r+1,c],[r,c-1],[r,c+1]]
+    .filter(([rr,cc]) => rr>=0&&rr<ROWS&&cc>=0&&cc<COLS);
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function findPath(path = [[0,0]], visited = new Set(['0,0'])) {
+  if (path.length === ROWS*COLS) return path;
+  const [r,c] = path[path.length-1];
+  for (let [nr,nc] of shuffle(neighbors(r,c))) {
+    const key = `${nr},${nc}`;
+    if (!visited.has(key)) {
+      visited.add(key); path.push([nr,nc]);
+      const res = findPath(path, visited);
+      if (res) return res;
+      visited.delete(key); path.pop();
+    }
+  }
+  return null;
 }
 
 gridEl.addEventListener('click', (e) => {
@@ -52,7 +177,11 @@ gridEl.addEventListener('click', (e) => {
     
     
     if (group) {
-      group.forEach(t => t.classList.remove('complete'));
+      group.forEach(tile => {
+        tile.classList.remove('complete'); 
+        tile.classList.remove('current'); 
+        tile.classList.remove('selected');
+      });
       completedTiles = completedTiles.filter(g => g !== group);
       drawConnections();
     }
@@ -64,7 +193,11 @@ gridEl.addEventListener('click', (e) => {
 
 function handleTileClick (tile) {
     const last = selectedTiles[selectedTiles.length - 1];
+    const secondLast = selectedTiles[selectedTiles.length - 2];
     if (tile === last) {
+      if (selectedTiles.length > 1) {
+        secondLast.classList.add('current');
+      }
     tile.classList.remove('selected');
     tile.classList.remove('current');
     selectedTiles.pop();
@@ -93,26 +226,32 @@ function isAdjacent(a, b) {
 }
 
 function submitWord() {
+  console.log(dictionaryArray);
+  if (!selectedTiles.length) return;
   const word = selectedTiles.map(t => t.textContent).join('').toLowerCase(); 
   if (!word) return;
+  console.log(word);
+  
 
-  if (dictionary.has(word)) {
+  if (dictionaryArray.includes(word)) {
     selectedTiles.forEach(t => t.classList.add('complete'));
+    announce("Word accepted!");
     completedTiles.push([...selectedTiles]);
     drawConnections();
+    clearSelection();
 
     if (completedTiles.length >= WORDS_TO_FIND) {
       setTimeout(() => {
         alert('+999,999,999 Social Credit');
+        announce("You win!");
         resetGame();
       }, 50);
     }
 
   } else {
     alert(`"${word}" ei löytynyt sanakirjasta.`);
+    clearSelection();
   }
-
-  clearSelection();
 }
 
 function resetGame () {
@@ -123,6 +262,8 @@ function resetGame () {
   drawConnections();
   clearSelection();
 
+  shuffleGrid();
+
   // Here a shuffle function can be implemented
 }
 
@@ -131,16 +272,6 @@ function clearSelection() {
   selectedTiles.forEach(t => t.classList.remove('current'));
   selectedTiles = [];
 }
-
-const svgNS = 'http://www.w3.org/2000/svg';
-const svg = document.createElementNS(svgNS, 'svg');
-svg.setAttribute('id', 'connections');
-svg.style.position = 'absolute';
-svg.style.top = '0'; svg.style.left = '0';
-svg.style.width = '100%'; svg.style.height = '100%';
-svg.style.pointerEvents = 'none';
-gridEl.style.position = 'relative';
-gridEl.appendChild(svg);
 
 function drawConnections() {
   while (svg.firstChild) svg.removeChild(svg.firstChild);
@@ -196,11 +327,21 @@ function drawConnections() {
       e.stopPropagation();               
       const idx = +poly.dataset.groupIndex;
       const groupToClear = completedTiles[idx];
-      groupToClear.forEach(t => t.classList.remove('complete'));
+      groupToClear.forEach(tile => {
+        tile.classList.remove('complete'); 
+        tile.classList.remove('current'); 
+        tile.classList.remove('selected');
+      });
       completedTiles.splice(idx, 1);
       drawConnections();
+      clearSelection();
     });
 
     svg.appendChild(poly);
   });
+}
+
+function announce(msg) {
+  const status = document.getElementById('status');
+  status.textContent = msg;
 }
