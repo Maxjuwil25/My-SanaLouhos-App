@@ -1,15 +1,14 @@
 @media (hover: hover) and (pointer: fine) {
-  .tile:hover { background-color: #afc5f9; }     /* was global */
-  #btn:hover { background-color: #4768bc; }      /* was global */
-  #connections polyline:hover {
-    stroke: #f1f1f1;
-    stroke-width: 2.1rem;
-    box-shadow: 0px 0px 2px rgba(0,0,0,0.15);
-  }
+  .tile:hover { background-color: #afc5f9; }
+  #btn:hover { background-color: #4768bc; }  
 }
 
 @media (hover: none) {
   #connections polyline { pointer-events: none; }
+}
+
+@media (max-width: 520px) {                     
+  #connections polyline { stroke-width: 1.25rem; }
 }
 
 body {
@@ -38,6 +37,7 @@ p {
 }
 
 .tile {
+    position: relative; z-index: 2;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -87,15 +87,19 @@ p {
     box-shadow: 0px 0px 2px rgba(0,0,0,0.15);
 }
 
-#connections { pointer-events: none; }
+#connections { 
+    pointer-events: none; 
+    position: absolute; inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
 
 #connections polyline {
     fill: none;
     stroke: #4768bc;
-    stroke-width: 2rem;
+    stroke-width: 1.75rem;
     stroke-linecap: round;
     stroke-linejoin: round;
-    pointer-events: none;
     transition: stroke 200ms ease,
                 stroke-width 200ms ease,
                 opacity 200ms ease;
