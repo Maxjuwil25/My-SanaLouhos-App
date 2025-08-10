@@ -226,7 +226,6 @@ function isAdjacent(a, b) {
 }
 
 function submitWord() {
-  console.log(dictionaryArray);
   if (!selectedTiles.length) return;
   const word = selectedTiles.map(t => t.textContent).join('').toLowerCase(); 
   if (!word) return;
@@ -240,7 +239,7 @@ function submitWord() {
     drawConnections();
     clearSelection();
 
-    if (completedTiles.length >= WORDS_TO_FIND) {
+    if (checkWin()) {
       setTimeout(() => {
         alert('+999,999,999 Social Credit');
         announce("You win!");
@@ -252,6 +251,28 @@ function submitWord() {
     alert(`"${word}" ei löytynyt sanakirjasta.`);
     clearSelection();
   }
+}
+
+function checkWin() {
+  console.log("moi");
+  
+  if (allTilesUsed()) {
+    return true
+  }
+  return false
+}
+
+function allTilesUsed() {
+  const totalTiles = document.querySelectorAll('.tile').length;
+  console.log("hey");
+  
+  console.log(document.querySelectorAll('.tile').length);
+  
+  const used = new Set();
+  // completedTiles is your array of arrays: [[tile, tile, ...], ...]
+  completedTiles.forEach(group => group.forEach(tile => used.add(tile)));
+  console.log(used.size);
+  return used.size === totalTiles;
 }
 
 function resetGame () {
