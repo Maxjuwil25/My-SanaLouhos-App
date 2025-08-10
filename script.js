@@ -254,7 +254,6 @@ function submitWord() {
 }
 
 function checkWin() {
-  console.log("moi");
   
   if (allTilesUsed()) {
     return true
@@ -264,12 +263,11 @@ function checkWin() {
 
 function allTilesUsed() {
   const totalTiles = document.querySelectorAll('.tile').length;
-  console.log("hey");
   
   console.log(document.querySelectorAll('.tile').length);
   
   const used = new Set();
-  // completedTiles is your array of arrays: [[tile, tile, ...], ...]
+  
   completedTiles.forEach(group => group.forEach(tile => used.add(tile)));
   console.log(used.size);
   return used.size === totalTiles;
