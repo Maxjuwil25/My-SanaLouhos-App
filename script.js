@@ -1,13 +1,3 @@
-
-/* const gridData = [
-    ['K','E','D','A','S'],
-    ['I','S','O','T','I'],
-    ['A','S','T','O','R'],
-    ['M','I','S','J','H'],
-    ['A','M','L','E','O'],
-    ['A','I','L','M','A']
-]; */
-
 let dictionary = new Set();
 let WORDS_TO_FIND = 5;
 gridEl = document.getElementById('grid');
@@ -299,6 +289,11 @@ function drawConnections() {
   const offset = 5;
 
   completedTiles.forEach((group, gi) => {
+    group.forEach(tile => {
+      tile.dataset.groupIndex = String(gi);
+      tile.classList.add('complete')
+    })
+    
     const centers = group.map(tile => {
       const rect = tile.getBoundingClientRect();
       return {
@@ -338,7 +333,7 @@ function drawConnections() {
     const poly = document.createElementNS(svgNS, 'polyline');
     poly.setAttribute('points', allPoints);
 
-    poly.dataset.groupIndex = gi;
+    poly.dataset.groupIndex = String(gi);
 
     poly.style.pointerEvents = 'all';
 
@@ -350,6 +345,7 @@ function drawConnections() {
         tile.classList.remove('complete'); 
         tile.classList.remove('current'); 
         tile.classList.remove('selected');
+        tile.removeAttribute('data-group-index');
       });
       completedTiles.splice(idx, 1);
       drawConnections();
@@ -357,6 +353,48 @@ function drawConnections() {
     });
 
     svg.appendChild(poly);
+  });
+
+  installHoverHighlights();
+}
+
+const mqHover = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+function highlightGroup(gid, on) {
+  document
+    .querySelectorAll(`#connections polyline[data-group-index="${gid}"]`)
+    .forEach(pl => pl.classList.toggle('highlight', on));
+}
+
+function installHoverHighlights() {
+
+  if (!mqHover.matches) {
+    document.querySelectorAll('.tile[data-group-index]').forEach(t => {
+    const gid = t.dataset.groupIndex;
+    t.onpointerdown = () => highlightGroup(gid, true);
+    t.onpointerup   = () => highlightGroup(gid, false);
+    t.onpointercancel = () => highlightGroup(gid, false);
+    });
+    return;
+    }
+
+  // Remove old listeners to avoid duplicates (optional)
+  document.querySelectorAll('.tile[data-group-index]').forEach(t => {
+    t.onpointerenter = null;
+    t.onpointerleave = null;
+    t.onfocus = null;
+    t.onblur = null;
+  });
+
+  // Add fresh listeners
+  document.querySelectorAll('.tile[data-group-index]').forEach(t => {
+    const gid = t.dataset.groupIndex;
+    t.onpointerenter = () => highlightGroup(gid, true);
+    t.onpointerleave = () => highlightGroup(gid, false);
+
+    // keyboard a11y highlight too
+    t.onfocus = () => highlightGroup(gid, true);
+    t.onblur  = () => highlightGroup(gid, false);
   });
 }
 

@@ -1,10 +1,25 @@
 @media (hover: hover) and (pointer: fine) {
-  .tile:hover { background-color: #afc5f9; }
-  #btn:hover { background-color: #4768bc; }  
+  .tile:hover { background-color: #a7ccf7; }
+  #btn:hover { background-color: #4768bc; }
+  #connections polyline.highlight {
+    stroke: #a7ccf7;           
+    filter: drop-shadow(0 0 2px rgba(0,0,0,.15));
+    stroke-width: 2rem;
+  }
+  #connections polyline:hover {
+    stroke: #a7ccf7;
+    filter: drop-shadow(0 0 2px rgba(0,0,0,.15));
+    stroke-width: 2rem;
+  }
 }
 
 @media (hover: none) {
   #connections polyline { pointer-events: none; }
+  #connections polyline.highlight {
+    stroke: #a7ccf7;           
+    filter: drop-shadow(0 0 2px rgba(0,0,0,.15));
+    stroke-width: 1.5rem;
+  }
 }
 
 @media (max-width: 520px) {                     
@@ -104,6 +119,10 @@ p {
                 stroke-width 200ms ease,
                 opacity 200ms ease;
     opacity: 0.4;
+}
+
+#connections polyline.connection {
+  transition: stroke 120ms ease, opacity 120ms ease;
 }
 
 .hidden {
